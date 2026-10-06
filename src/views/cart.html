@@ -20,9 +20,14 @@
     async function load() {
       try {
         const c = await apiJson("/api/v1/cart");
+        const names = {};
+        await Promise.all(c.items.map(async i => {
+          try { names[i.product_id] = (await apiJson(`/api/v1/products/${i.product_id}`, {}, false)).name; }
+          catch { names[i.product_id] = i.product_id; }
+        }));
         const rows = c.items.map(i => `
           <tr class="border-t">
-            <td class="py-2 text-sm">${i.product_id}</td>
+            <td class="py-2"><a class="text-indigo-600 text-sm" href="product.html?id=${i.product_id}">${names[i.product_id]}</a></td>
             <td class="py-2"><input type="number" min="0" value="${i.quantity}" data-id="${i.product_id}" class="qty w-20 border rounded px-2 py-1"></td>
             <td class="py-2">${formatMoney(i.unit_price)}</td>
             <td class="py-2">${formatMoney(i.subtotal)}</td>

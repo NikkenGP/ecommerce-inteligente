@@ -69,7 +69,7 @@
           const inp = document.querySelector(`.delta[data-id="${b.dataset.id}"]`);
           const delta = parseInt(inp.value, 10);
           if (!delta) { showMessage(document.getElementById("msg"), "error", "Delta inválido (distinto de 0)"); return; }
-          try { await apiJson(`/api/v1/products/${b.dataset.id}/stock`, { method: "PATCH", body: JSON.stringify({ delta }) }); showMessage(document.getElementById("msg"), "ok", "Stock actualizado"); load(); }
+          try { await apiJson(`/api/v1/products/${b.dataset.id}/stock`, { method: "PATCH", body: JSON.stringify({ delta }) }); inp.value = 0; showMessage(document.getElementById("msg"), "ok", "Stock actualizado"); load(); }
           catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
         });
       } catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }

@@ -2,7 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <script>location.replace("catalog.html");</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Commerce Inteligente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta http-equiv="refresh" content="3; url=catalog.html">
 </head>
-<body></body>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <main class="text-center p-8">
+    <h1 class="text-3xl font-bold text-indigo-700">E-Commerce Inteligente</h1>
+    <p class="text-gray-600 mt-2">Redirigiendo al catálogo…</p>
+    <a href="catalog.html" class="inline-block mt-4 bg-indigo-600 text-white px-6 py-2 rounded">Ir ahora</a>
+  </main>
+  <script>location.replace("catalog.html");</script>
+</body>
 </html>

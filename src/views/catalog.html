@@ -15,6 +15,7 @@
       <input id="brand" placeholder="Marca" class="border rounded px-3 py-2">
       <label class="flex items-center gap-1 text-sm"><input id="on_sale" type="checkbox"> En oferta</label>
       <button class="bg-indigo-600 text-white px-4 py-2 rounded">Filtrar</button>
+      <button type="button" id="clear" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Limpiar</button>
     </form>
     <div id="msg" class="hidden"></div>
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -46,7 +47,12 @@
             <button data-id="${p.id}" class="detail bg-gray-200 px-3 py-1 rounded mt-2 text-sm">Ver</button>
             <button data-id="${p.id}" class="add bg-indigo-600 text-white px-3 py-1 rounded mt-2 text-sm" ${p.stock === 0 ? "disabled" : ""}>Agregar</button>
           </div>`).join("") || "<p class='text-gray-500'>Sin resultados</p>";
-        document.getElementById("pageInfo").textContent = `Página ${data.page} de ${Math.max(1, Math.ceil(data.total / data.page_size))} (${data.total} productos)`;
+        const totalPages = Math.max(1, Math.ceil(data.total / data.page_size));
+        document.getElementById("pageInfo").textContent = `Página ${data.page} de ${totalPages} (${data.total} productos)`;
+        document.getElementById("prev").disabled = data.page <= 1;
+        document.getElementById("next").disabled = data.page >= totalPages;
+        document.getElementById("prev").classList.toggle("opacity-50", data.page <= 1);
+        document.getElementById("next").classList.toggle("opacity-50", data.page >= totalPages);
         document.querySelectorAll(".detail").forEach(b => b.onclick = () => location.href = `product.html?id=${b.dataset.id}`);
         document.querySelectorAll(".add").forEach(b => b.onclick = async () => {
           if (!currentUser()) { location.href = "login.html"; return; }
@@ -58,6 +64,12 @@
     document.getElementById("filters").onsubmit = (e) => { e.preventDefault(); page = 1; load(); };
     document.getElementById("prev").onclick = () => { if (page > 1) { page--; load(); } };
     document.getElementById("next").onclick = () => { page++; load(); };
+    document.getElementById("clear").onclick = () => {
+      document.getElementById("category").value = "";
+      document.getElementById("brand").value = "";
+      document.getElementById("on_sale").checked = false;
+      page = 1; load();
+    };
     load();
   </script>
 </body>
