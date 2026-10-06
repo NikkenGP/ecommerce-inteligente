@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recomendaciones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="nav"></div>
+  <main class="max-w-4xl mx-auto p-4">
+    <h1 class="text-2xl font-bold my-4">Recomendado para ti</h1>
+    <div id="msg" class="hidden"></div>
+    <p id="meta" class="text-sm text-gray-500 mb-3"></p>
+    <div id="list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    const u = requireAuth();
+    if (u) load();
+    async function load() {
+      try {
+        const data = await apiJson(`/api/v1/recommendations/${u.id}`);
+        document.getElementById("meta").textContent = `Estrategia: ${data.strategy} · Latencia: ${data.latency_ms} ms`;
+        const products = await Promise.all(data.results.map(async r => {
+          try { return { ...r, product: await apiJson(`/api/v1/products/${r.product_id}`, {}, false) }; }
+          catch { return { ...r, product: null }; }
+        }));
+        document.getElementById("list").innerHTML = products.map(r => `
+          <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-bold">${r.product ? r.product.name : r.product_id}</h2>
+            ${r.product ? `<p class="text-sm text-gray-500">${r.product.brand} · ${r.product.category}</p>
+            <p class="mt-1">${r.product.on_sale && r.product.sale_price ? formatMoney(r.product.sale_price) : formatMoney(r.product.price)}</p>` : ""}
+            <p class="text-xs text-gray-500 mt-1">Score: ${r.score.toFixed(3)} · ${r.source}</p>
+            <div class="flex gap-2 mt-2">
+              <a href="product.html?id=${r.product_id}" class="text-sm text-indigo-600">Ver</a>
+              <button data-id="${r.product_id}" class="add text-sm bg-indigo-600 text-white px-2 py-0.5 rounded">Agregar</button>
+            </div>
+          </div>`).join("") || "<p class='text-gray-500'>Sin recomendaciones aún.</p>";
+        document.querySelectorAll(".add").forEach(b => b.onclick = async () => {
+          try { await apiJson("/api/v1/cart/items", { method: "POST", body: JSON.stringify({ product_id: b.dataset.id, quantity: 1 }) }); showMessage(document.getElementById("msg"), "ok", "Agregado al carrito"); }
+          catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+        });
+      } catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+    }
+  </script>
+</body>
+</html>

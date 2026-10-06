@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+markers = ["unit", "integration", "slow"]
+addopts = "-v --tb=short"
+testpaths = ["tests"]

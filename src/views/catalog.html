@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="nav"></div>
+  <main class="max-w-6xl mx-auto p-4">
+    <h1 class="text-2xl font-bold my-4">Catálogo</h1>
+    <form id="filters" class="flex flex-wrap gap-2 mb-4">
+      <input id="category" placeholder="Categoría" class="border rounded px-3 py-2">
+      <input id="brand" placeholder="Marca" class="border rounded px-3 py-2">
+      <label class="flex items-center gap-1 text-sm"><input id="on_sale" type="checkbox"> En oferta</label>
+      <button class="bg-indigo-600 text-white px-4 py-2 rounded">Filtrar</button>
+    </form>
+    <div id="msg" class="hidden"></div>
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div class="flex items-center justify-center gap-4 mt-6">
+      <button id="prev" class="px-4 py-2 bg-white border rounded">Anterior</button>
+      <span id="pageInfo" class="text-sm text-gray-600"></span>
+      <button id="next" class="px-4 py-2 bg-white border rounded">Siguiente</button>
+    </div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    let page = 1;
+    async function load() {
+      const params = new URLSearchParams({ page, page_size: 12 });
+      const cat = document.getElementById("category").value.trim();
+      const brand = document.getElementById("brand").value.trim();
+      if (cat) params.set("category", cat);
+      if (brand) params.set("brand", brand);
+      if (document.getElementById("on_sale").checked) params.set("on_sale", "true");
+      try {
+        const data = await apiJson(`/api/v1/products?${params}`, {}, false);
+        document.getElementById("grid").innerHTML = data.items.map(p => `
+          <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-bold">${p.name}</h2>
+            <p class="text-sm text-gray-500">${p.brand} · ${p.category}</p>
+            <p class="mt-2">${p.on_sale && p.sale_price ? `<span class="line-through text-gray-400">${formatMoney(p.price)}</span> ${formatMoney(p.sale_price)}` : formatMoney(p.price)}</p>
+            <p class="text-sm ${p.stock > 0 ? "text-green-600" : "text-red-600"}">Stock: ${p.stock}</p>
+            <button data-id="${p.id}" class="detail bg-gray-200 px-3 py-1 rounded mt-2 text-sm">Ver</button>
+            <button data-id="${p.id}" class="add bg-indigo-600 text-white px-3 py-1 rounded mt-2 text-sm" ${p.stock === 0 ? "disabled" : ""}>Agregar</button>
+          </div>`).join("") || "<p class='text-gray-500'>Sin resultados</p>";
+        document.getElementById("pageInfo").textContent = `Página ${data.page} de ${Math.max(1, Math.ceil(data.total / data.page_size))} (${data.total} productos)`;
+        document.querySelectorAll(".detail").forEach(b => b.onclick = () => location.href = `product.html?id=${b.dataset.id}`);
+        document.querySelectorAll(".add").forEach(b => b.onclick = async () => {
+          if (!currentUser()) { location.href = "login.html"; return; }
+          try { await apiJson("/api/v1/cart/items", { method: "POST", body: JSON.stringify({ product_id: b.dataset.id, quantity: 1 }) }); showMessage(document.getElementById("msg"), "ok", "Agregado al carrito"); }
+          catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+        });
+      } catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+    }
+    document.getElementById("filters").onsubmit = (e) => { e.preventDefault(); page = 1; load(); };
+    document.getElementById("prev").onclick = () => { if (page > 1) { page--; load(); } };
+    document.getElementById("next").onclick = () => { page++; load(); };
+    load();
+  </script>
+</body>
+</html>

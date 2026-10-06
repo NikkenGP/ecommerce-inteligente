@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="nav"></div>
+  <main class="max-w-xl mx-auto p-4">
+    <h1 class="text-2xl font-bold my-4">Checkout (pago simulado)</h1>
+    <div id="msg" class="hidden"></div>
+    <form id="form" class="bg-white p-6 rounded shadow space-y-4">
+      <div>
+        <label class="block text-sm font-medium">Escenario de la pasarela (mock)</label>
+        <select id="scenario" class="mt-1 w-full border rounded px-3 py-2">
+          <option value="approved">approved — pago aprobado</option>
+          <option value="declined">declined — pago rechazado</option>
+          <option value="timeout">timeout — sin respuesta (504)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Moneda</label>
+        <input id="currency" value="USD" class="mt-1 w-full border rounded px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Idempotency key</label>
+        <div class="flex gap-2">
+          <input id="idem" class="mt-1 flex-1 border rounded px-3 py-2">
+          <button type="button" id="regen" class="mt-1 px-3 border rounded">↻</button>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Reutiliza la misma clave al reintentar tras un timeout.</p>
+      </div>
+      <button class="w-full bg-indigo-600 text-white py-2 rounded">Pagar</button>
+    </form>
+    <div id="result" class="mt-4 bg-white p-6 rounded shadow hidden"></div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    if (requireAuth()) {
+      const idem = document.getElementById("idem");
+      const newKey = () => idem.value = crypto.randomUUID();
+      newKey();
+      document.getElementById("regen").onclick = newKey;
+      document.getElementById("form").onsubmit = async (e) => {
+        e.preventDefault();
+        const result = document.getElementById("result");
+        result.classList.add("hidden");
+        try {
+          const data = await apiJson("/api/v1/checkout", {
+            method: "POST",
+            body: JSON.stringify({
+              scenario: document.getElementById("scenario").value,
+              currency: document.getElementById("currency").value || "USD",
+              idempotency_key: idem.value,
+            }),
+          });
+          result.classList.remove("hidden");
+          if (data.payment.status === "approved" && data.order) {
+            result.innerHTML = `<h2 class="font-bold text-green-700">Pago aprobado</h2>
+              <p>Pedido <b>${data.order.id}</b> · Total ${formatMoney(data.order.total)} · Estado ${data.order.status}</p>
+              <p class="text-sm mt-1">Transacción: ${data.payment.transaction_id}</p>
+              <a href="orders.html" class="text-indigo-600">Ver pedidos</a>`;
+            newKey();
+          } else {
+            result.innerHTML = `<h2 class="font-bold text-red-700">Pago ${data.payment.status}</h2>
+              <p>${data.payment.reason || "Sin detalle"}</p>`;
+          }
+        } catch (err) {
+          result.classList.remove("hidden");
+          if (err.status === 504) {
+            result.innerHTML = `<h2 class="font-bold text-yellow-700">Timeout de pasarela</h2>
+              <p>La pasarela no respondió. Reintenta con la misma idempotency_key.</p>`;
+          } else if (err.status === 409 && err.data?.detail?.items) {
+            result.innerHTML = `<h2 class="font-bold text-red-700">Stock insuficiente</h2>
+              <ul class="list-disc ml-5 text-sm">${err.data.detail.items.map(i => `<li>${i.product_id}: solicitado ${i.requested}, disponible ${i.available}</li>`).join("")}</ul>`;
+          } else {
+            result.innerHTML = `<h2 class="font-bold text-red-700">Error</h2><p>${err.message}</p>`;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

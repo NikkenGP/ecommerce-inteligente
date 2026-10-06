@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrito</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="nav"></div>
+  <main class="max-w-4xl mx-auto p-4">
+    <h1 class="text-2xl font-bold my-4">Carrito</h1>
+    <div id="msg" class="hidden"></div>
+    <div id="cart" class="bg-white rounded shadow p-4"></div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    if (requireAuth()) load();
+    async function load() {
+      try {
+        const c = await apiJson("/api/v1/cart");
+        const rows = c.items.map(i => `
+          <tr class="border-t">
+            <td class="py-2 text-sm">${i.product_id}</td>
+            <td class="py-2"><input type="number" min="0" value="${i.quantity}" data-id="${i.product_id}" class="qty w-20 border rounded px-2 py-1"></td>
+            <td class="py-2">${formatMoney(i.unit_price)}</td>
+            <td class="py-2">${formatMoney(i.subtotal)}</td>
+            <td class="py-2"><button data-id="${i.product_id}" class="del text-red-600 text-sm">Eliminar</button></td>
+          </tr>`).join("");
+        document.getElementById("cart").innerHTML = c.items.length ? `
+          <table class="w-full"><thead><tr class="text-left text-sm text-gray-500"><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody>${rows}</tbody></table>
+          <div class="mt-4 text-right text-sm">
+            <p>Subtotal: ${formatMoney(c.subtotal)}</p>
+            <p>Impuestos: ${formatMoney(c.tax)}</p>
+            <p class="font-bold text-lg">Total: ${formatMoney(c.total)}</p>
+          </div>
+          <a href="checkout.html" class="block mt-4 bg-indigo-600 text-white text-center py-2 rounded">Ir a checkout</a>`
+          : "<p class='text-gray-500'>Carrito vacío. <a class='text-indigo-600' href='catalog.html'>Ver catálogo</a></p>";
+        document.querySelectorAll(".qty").forEach(inp => inp.onchange = async () => {
+          try { await apiJson(`/api/v1/cart/items/${inp.dataset.id}`, { method: "PATCH", body: JSON.stringify({ quantity: parseInt(inp.value, 10) || 0 }) }); load(); }
+          catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+        });
+        document.querySelectorAll(".del").forEach(b => b.onclick = async () => {
+          try { await apiJson(`/api/v1/cart/items/${b.dataset.id}`, { method: "DELETE" }); load(); }
+          catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+        });
+      } catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+    }
+  </script>
+</body>
+</html>

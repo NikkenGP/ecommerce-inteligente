@@ -1,0 +1,35 @@
+# Entornos y secretos
+.env
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Pruebas y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Base de datos local
+*.db
+*.sqlite3
+
+# SO / editores
+.DS_Store
+.vscode/
+.idea/
+
+# Agentes y contexto del proyecto (nunca versionar)
+.opencode/
+.agents/
+AGENTS.md
+MEMORY.md
+skills-lock.json

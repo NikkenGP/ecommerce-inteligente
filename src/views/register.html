@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="nav"></div>
+  <main class="max-w-md mx-auto mt-10 bg-white p-8 rounded shadow">
+    <h1 class="text-2xl font-bold mb-6">Crear cuenta</h1>
+    <form id="regForm" class="space-y-4" novalidate>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Email</label>
+        <input id="email" type="email" required class="mt-1 w-full border rounded px-3 py-2">
+        <p class="text-red-600 text-xs mt-1 hidden" id="emailErr"></p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Contraseña (mínimo 8 caracteres)</label>
+        <input id="password" type="password" required minlength="8" class="mt-1 w-full border rounded px-3 py-2">
+        <p class="text-red-600 text-xs mt-1 hidden" id="passwordErr"></p>
+      </div>
+      <div id="msg" class="hidden"></div>
+      <button class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Registrarse</button>
+      <p class="text-sm text-gray-600">¿Ya tienes cuenta? <a href="login.html" class="text-indigo-600">Entra</a></p>
+    </form>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    document.getElementById("regForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const emailErr = document.getElementById("emailErr");
+      const passwordErr = document.getElementById("passwordErr");
+      emailErr.classList.add("hidden"); passwordErr.classList.add("hidden");
+      let ok = true;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { emailErr.textContent = "Email inválido"; emailErr.classList.remove("hidden"); ok = false; }
+      if (password.length < 8) { passwordErr.textContent = "Mínimo 8 caracteres"; passwordErr.classList.remove("hidden"); ok = false; }
+      if (!ok) return;
+      try {
+        await apiJson("/api/v1/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }, false);
+        showMessage(document.getElementById("msg"), "ok", "Cuenta creada. Redirigiendo al login...");
+        setTimeout(() => location.href = "login.html", 1200);
+      } catch (err) { showMessage(document.getElementById("msg"), "error", err.message); }
+    });
+  </script>
+</body>
+</html>
